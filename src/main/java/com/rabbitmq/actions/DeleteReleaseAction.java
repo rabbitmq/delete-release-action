@@ -66,9 +66,6 @@ public class DeleteReleaseAction {
             new Params(tagFilter, keepLastN),
             new Source(orgRepository.split("/")[0], orgRepository.split("/")[1]));
 
-    logGreen(input.toString());
-
-    /*
     ReleaseAccess access = new GitubRestApiReleaseAccess(input);
 
     List<Release> releases = access.list();
@@ -95,8 +92,6 @@ public class DeleteReleaseAction {
             log(" Keeping release with tag " + r.tag());
           }
         });
-
-     */
   }
 
   private static void testSequence() {
