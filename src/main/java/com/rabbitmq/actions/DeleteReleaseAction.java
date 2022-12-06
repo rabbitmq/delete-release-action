@@ -25,7 +25,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -33,8 +36,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DeleteReleaseAction {
-
-  private static final String GITHUB_TOKEN = System.getenv("DELETE_RELEASE_ACTION_TOKEN");
 
   private static final String GITHUB_API_URL =
       System.getenv("GITHUB_API_URL") == null
@@ -49,22 +50,29 @@ public class DeleteReleaseAction {
     if (args.length == 1 && "test".equals(args[0])) {
       testSequence();
     }
-    if (args.length != 3) {
-      logRed("Number of arguments should be 3");
-      System.exit(1);
+    Map<String, String> envArguments = new LinkedHashMap<>();
+    envArguments.put("INPUT_REPOSITORY", "repository");
+    envArguments.put("INPUT_TOKEN", "token");
+    envArguments.put("INPUT_TAG-FILTER", "tag-filter");
+    envArguments.put("INPUT_KEEP-LAST-N", "keep-last-n");
+    for (Entry<String, String> entry : envArguments.entrySet()) {
+      try {
+        checkParameter(entry.getKey(), entry.getValue());
+      } catch (IllegalArgumentException e) {
+        logRed(e.getMessage());
+        System.exit(1);
+      }
     }
-    if (GITHUB_TOKEN == null) {
-      logRed("Set the DELETE_RELEASE_ACTION_TOKEN environment variable");
-      System.exit(1);
-    }
-    String orgRepository = args[0];
-    String tagFilter = args[1];
-    int keepLastN = Integer.valueOf(args[2]);
+
+    String orgRepository = System.getenv("INPUT_REPOSITORY");
+    String token = System.getenv("INPUT_TOKEN");
+    String tagFilter = System.getenv("INPUT_TAG-FILTER");
+    int keepLastN = Integer.valueOf(System.getenv("INPUT_KEEP-LAST-N"));
 
     Input input =
         new Input(
             new Params(tagFilter, keepLastN),
-            new Source(orgRepository.split("/")[0], orgRepository.split("/")[1]));
+            new Source(orgRepository.split("/")[0], orgRepository.split("/")[1], token));
 
     ReleaseAccess access = new GitubRestApiReleaseAccess(input);
 
@@ -92,6 +100,12 @@ public class DeleteReleaseAction {
             log(" Keeping release with tag " + r.tag());
           }
         });
+  }
+
+  private static void checkParameter(String env, String arg) {
+    if (System.getenv(env) == null) {
+      throw new IllegalArgumentException("Parameter " + arg + " must be set");
+    }
   }
 
   private static void testSequence() {
@@ -266,7 +280,7 @@ public class DeleteReleaseAction {
     }
 
     private Builder auth(Builder builder) {
-      return builder.setHeader("Authorization", "token " + GITHUB_TOKEN);
+      return builder.setHeader("Authorization", "token " + input.source().token());
     }
   }
 
@@ -401,10 +415,12 @@ public class DeleteReleaseAction {
 
     private final String owner;
     private final String repository;
+    private final String token;
 
-    Source(String owner, String repository) {
+    Source(String owner, String repository, String token) {
       this.owner = owner;
       this.repository = repository;
+      this.token = token;
     }
 
     String owner() {
@@ -413,6 +429,10 @@ public class DeleteReleaseAction {
 
     String repository() {
       return repository;
+    }
+
+    String token() {
+      return token;
     }
 
     @Override
