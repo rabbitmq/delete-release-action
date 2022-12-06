@@ -22,6 +22,5 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.repository }}
-    - ${{ inputs.token }}
     - ${{ inputs.tag-filter }}
     - ${{ inputs.keep-last-n }}

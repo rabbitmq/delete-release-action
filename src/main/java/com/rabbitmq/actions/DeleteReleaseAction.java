@@ -28,62 +28,73 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DeleteReleaseAction {
 
-  private static final String GITHUB_API_URL = System.getenv("GITHUB_API_URL") == null ?
-     "https://api.github.com" : System.getenv("GITHUB_API_URL");
+  private static final String GITHUB_TOKEN = System.getenv("DELETE_RELEASE_ACTION_TOKEN");
+
+  private static final String GITHUB_API_URL =
+      System.getenv("GITHUB_API_URL") == null
+          ? "https://api.github.com"
+          : System.getenv("GITHUB_API_URL");
   static final Gson GSON =
       new GsonBuilder()
           .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeDeserializer())
           .create();
 
   public static void main(String[] args) {
-    log("Number of parameters: %d", args.length);
-    for (String arg : args) {
-      log("Parameter: %s", arg);
+    if (args.length == 1 && "test".equals(args[0])) {
+      testSequence();
     }
-    log("GitHub API URL: %s", GITHUB_API_URL);
+    if (args.length != 3) {
+      logRed("Number of arguments should be 3");
+      System.exit(1);
+    }
+    if (GITHUB_TOKEN == null) {
+      logRed("Set the DELETE_RELEASE_ACTION_TOKEN environment variable");
+      System.exit(1);
+    }
+    String orgRepository = args[0];
+    String tagFilter = args[1];
+    int keepLastN = Integer.valueOf(args[2]);
+
+    Input input =
+        new Input(
+            new Params(tagFilter, keepLastN),
+            new Source(orgRepository.split("/")[0], orgRepository.split("/")[1]));
+
+    logGreen(input.toString());
 
     /*
-      Input input = GSON.fromJson(builder.toString(), Input.class);
-      ReleaseAccess access = new GitubRestApiReleaseAccess(input);
+    ReleaseAccess access = new GitubRestApiReleaseAccess(input);
 
-      List<Release> releases = access.list();
-      List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
-      if (!filteredReleases.isEmpty()) {
-        Collections.sort(filteredReleases, Comparator.comparing(Release::publication));
-      }
-      List<Release> toDeleteReleases =
-          filterForDeletion(filteredReleases, input.params().keepLastN());
-
-      logGreen("Tag filter: " + input.params().tagFilter());
-
-      filteredReleases.forEach(
-          r -> {
-            if (toDeleteReleases.contains(r)) {
-              logYellow("Removing release with tag " + r.tag());
-              try {
-                access.delete(r);
-                access.deleteTag(r);
-              } catch (Exception e) {
-                logRed("Error while deleting release " + r + ": " + e.getMessage());
-              }
-            } else {
-              log(" Keeping release with tag " + r.tag());
-            }
-          });
-
-      out(JSON_DELETED_VERSION);
-    } else if ("test".equals(command)) {
-      testSequence();
-    } else {
-      throw new IllegalArgumentException("command not supported: " + command);
+    List<Release> releases = access.list();
+    List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
+    if (!filteredReleases.isEmpty()) {
+      Collections.sort(filteredReleases, Comparator.comparing(Release::publication));
     }
+    List<Release> toDeleteReleases =
+        filterForDeletion(filteredReleases, input.params().keepLastN());
+
+    logGreen("Tag filter: " + input.params().tagFilter());
+
+    filteredReleases.forEach(
+        r -> {
+          if (toDeleteReleases.contains(r)) {
+            logYellow("Removing release with tag " + r.tag());
+            try {
+              access.delete(r);
+              access.deleteTag(r);
+            } catch (Exception e) {
+              logRed("Error while deleting release " + r + ": " + e.getMessage());
+            }
+          } else {
+            log(" Keeping release with tag " + r.tag());
+          }
+        });
 
      */
   }
@@ -251,7 +262,8 @@ public class DeleteReleaseAction {
           HttpRequest.newBuilder()
               .uri(
                   URI.create(
-                      "https://api.github.com/repos/"
+                      GITHUB_API_URL
+                          + "/repos/"
                           + input.source().owner()
                           + "/"
                           + input.source().repository()
@@ -259,7 +271,7 @@ public class DeleteReleaseAction {
     }
 
     private Builder auth(Builder builder) {
-      return builder.setHeader("Authorization", "token " + input.source().accessToken());
+      return builder.setHeader("Authorization", "token " + GITHUB_TOKEN);
     }
   }
 
@@ -344,8 +356,13 @@ public class DeleteReleaseAction {
 
   static class Input {
 
-    private Params params;
-    private Source source;
+    private final Params params;
+    private final Source source;
+
+    Input(Params params, Source source) {
+      this.params = params;
+      this.source = source;
+    }
 
     Params params() {
       return params;
@@ -363,8 +380,13 @@ public class DeleteReleaseAction {
 
   static class Params {
 
-    private String tag_filter;
-    private int keep_last_n;
+    private final String tag_filter;
+    private final int keep_last_n;
+
+    Params(String tag_filter, int keep_last_n) {
+      this.tag_filter = tag_filter;
+      this.keep_last_n = keep_last_n;
+    }
 
     String tagFilter() {
       return tag_filter;
@@ -382,9 +404,13 @@ public class DeleteReleaseAction {
 
   static class Source {
 
-    private String owner;
-    private String repository;
-    private String access_token;
+    private final String owner;
+    private final String repository;
+
+    Source(String owner, String repository) {
+      this.owner = owner;
+      this.repository = repository;
+    }
 
     String owner() {
       return owner;
@@ -394,23 +420,9 @@ public class DeleteReleaseAction {
       return repository;
     }
 
-    String accessToken() {
-      return access_token;
-    }
-
     @Override
     public String toString() {
-      return "Source{"
-          + "owner='"
-          + owner
-          + '\''
-          + ", repository='"
-          + repository
-          + '\''
-          + ", access_token='"
-          + access_token
-          + '\''
-          + '}';
+      return "Source{" + "owner='" + owner + '\'' + ", repository='" + repository + '\'' + '}';
     }
   }
 }

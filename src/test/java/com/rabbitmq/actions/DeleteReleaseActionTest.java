@@ -9,7 +9,6 @@ import static com.rabbitmq.actions.DeleteReleaseAction.filterByTag;
 import static com.rabbitmq.actions.DeleteReleaseAction.filterForDeletion;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.rabbitmq.actions.DeleteReleaseAction.Input;
 import com.rabbitmq.actions.DeleteReleaseAction.Release;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,19 +18,6 @@ import org.junit.jupiter.api.Test;
 
 public class DeleteReleaseActionTest {
 
-  static final String SAMPLE =
-      "{\n"
-          + "  \"source\": {\n"
-          + "    \"owner\": \"rabbitmq\",\n"
-          + "    \"repository\": \"rabbitmq-server\",\n"
-          + "    \"access_token\": \"42\"\n"
-          + "  },\n"
-          + "  \"params\": {\n"
-          + "    \"tag_filter\": \"some regex pattern\",\n"
-          + "    \"keep_last_n\": 3\n"
-          + "  }\n"
-          + "}";
-
   static Release rTag(long id, String tag) {
     return new Release(id, tag);
   }
@@ -39,19 +25,6 @@ public class DeleteReleaseActionTest {
   static Release rDate(long id, String date) {
     return new Release(
         id, ZonedDateTime.parse(date + "T08:38:25Z", DateTimeFormatter.ISO_ZONED_DATE_TIME));
-  }
-
-  @Test
-  void parseInput() {
-    Input input = DeleteReleaseAction.GSON.fromJson(SAMPLE, Input.class);
-    assertThat(input.source()).isNotNull();
-    assertThat(input.source().owner()).isEqualTo("rabbitmq");
-    assertThat(input.source().repository()).isEqualTo("rabbitmq-server");
-    assertThat(input.source().accessToken()).isEqualTo("42");
-
-    assertThat(input.params()).isNotNull();
-    assertThat(input.params().tagFilter()).isEqualTo("some regex pattern");
-    assertThat(input.params().keepLastN()).isEqualTo(3);
   }
 
   @Test
