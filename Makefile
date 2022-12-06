@@ -13,7 +13,7 @@ package: clean ## Build the binary distribution
 	./mvnw package -Dmaven.test.skip
 
 .PHONY: docker-image
-docker-image: package ## Build Docker image
+docker-image: ## Build Docker image
 	@docker build --tag pivotalrabbitmq/delete-release-action:latest .
 
 .PHONY: push-docker-image
