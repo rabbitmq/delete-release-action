@@ -56,7 +56,7 @@ COPY --from=builder /jre $JAVA_HOME/
 RUN ln -svT $JAVA_HOME/bin/java /usr/local/bin/java
 
 RUN mkdir -p /app
-WORKDIR app
+
 COPY --from=builder /project/target/delete-release-action.jar /app
 RUN set -eux; \
     java -jar /app/delete-release-action.jar test
@@ -66,4 +66,4 @@ RUN useradd --uid 1000 --gid github --comment "github user" github
 
 USER github:github
 
-ENTRYPOINT ["java", "-jar", "delete-release-action.jar"]
+ENTRYPOINT ["java", "-jar", "/app/delete-release-action.jar"]
