@@ -34,11 +34,7 @@ COPY mvnw /project
 
 WORKDIR /project
 RUN set -eux; \
-    ./mvnw package -Dmaven.test.skip
-
-
-
-COPY target/github-release-delete-resource.jar /app
+    ./mvnw package -Dmaven.test.skip --no-transfer-progress
 
 FROM ubuntu:22.04
 
