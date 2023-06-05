@@ -79,7 +79,7 @@ public class DeleteReleaseAction {
     List<Release> releases = access.list();
     List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
     if (!filteredReleases.isEmpty()) {
-      Collections.sort(filteredReleases, Comparator.comparing(Release::publication));
+      filteredReleases.sort(Comparator.nullsFirst(Comparator.comparing(Release::publication)));
     }
     List<Release> toDeleteReleases =
         filterForDeletion(filteredReleases, input.params().keepLastN());
@@ -174,7 +174,7 @@ public class DeleteReleaseAction {
       return Collections.emptyList();
     } else {
       releases = new ArrayList<>(releases);
-      Collections.sort(releases, Comparator.comparing(Release::publication));
+      releases.sort(Comparator.nullsFirst(Comparator.comparing(Release::publication)));
       return releases.subList(0, releases.size() - keepLastN);
     }
   }
