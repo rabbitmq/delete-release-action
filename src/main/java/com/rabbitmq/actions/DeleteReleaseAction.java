@@ -79,7 +79,7 @@ public class DeleteReleaseAction {
     List<Release> releases = access.list();
     List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
     if (!filteredReleases.isEmpty()) {
-      filteredReleases.sort(Comparator.nullsFirst(Comparator.comparing(Release::publication)));
+      sortByPublication(filteredReleases);
     }
     List<Release> toDeleteReleases =
         filterForDeletion(filteredReleases, input.params().keepLastN());
@@ -174,7 +174,7 @@ public class DeleteReleaseAction {
       return Collections.emptyList();
     } else {
       releases = new ArrayList<>(releases);
-      releases.sort(Comparator.nullsFirst(Comparator.comparing(Release::publication)));
+      sortByPublication(releases);
       return releases.subList(0, releases.size() - keepLastN);
     }
   }
@@ -440,4 +440,9 @@ public class DeleteReleaseAction {
       return "Source{" + "owner='" + owner + '\'' + ", repository='" + repository + '\'' + '}';
     }
   }
+
+  static void sortByPublication(List<Release> releases) {
+    releases.sort(Comparator.comparing(Release::publication, Comparator.nullsFirst(Comparator.naturalOrder())));
+  }
+
 }

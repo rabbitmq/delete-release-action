@@ -23,8 +23,12 @@ public class DeleteReleaseActionTest {
   }
 
   static Release rDate(long id, String date) {
+    ZonedDateTime dateTime = null;
+    if (date != null) {
+     dateTime = ZonedDateTime.parse(date + "T08:38:25Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    }
     return new Release(
-        id, ZonedDateTime.parse(date + "T08:38:25Z", DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        id, dateTime);
   }
 
   @Test
@@ -67,6 +71,7 @@ public class DeleteReleaseActionTest {
             rDate(3L, "2021-01-03"),
             rDate(4L, "2021-01-04"),
             rDate(2L, "2021-01-02"),
+            rDate(42L, null),
             rDate(8L, "2021-01-08"),
             rDate(6L, "2021-01-06"),
             rDate(9L, "2021-01-09"),
@@ -74,15 +79,20 @@ public class DeleteReleaseActionTest {
             rDate(5L, "2021-01-05"));
 
     assertThat(filterForDeletion(releases, 3).stream().mapToLong(r -> r.id()))
-        .hasSize(6)
-        .containsExactlyInAnyOrder(1L, 2L, 3L, 4L, 5L, 6L);
+        .hasSize(7)
+        .containsExactlyInAnyOrder(42L, 1L, 2L, 3L, 4L, 5L, 6L);
 
     assertThat(filterForDeletion(releases, releases.size() - 1).stream().mapToLong(r -> r.id()))
         .hasSize(1)
-        .containsExactlyInAnyOrder(1L);
+        .containsExactlyInAnyOrder(42L);
+
+    assertThat(filterForDeletion(releases, releases.size() - 2).stream().mapToLong(r -> r.id()))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(42L, 1L);
 
     assertThat(filterForDeletion(releases, 0)).hasSameSizeAs(releases).hasSameElementsAs(releases);
 
     assertThat(filterForDeletion(releases, releases.size() + 1)).isEmpty();
   }
+
 }
