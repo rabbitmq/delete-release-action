@@ -25,10 +25,9 @@ public class DeleteReleaseActionTest {
   static Release rDate(long id, String date) {
     ZonedDateTime dateTime = null;
     if (date != null) {
-     dateTime = ZonedDateTime.parse(date + "T08:38:25Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
+      dateTime = ZonedDateTime.parse(date + "T08:38:25Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
     }
-    return new Release(
-        id, dateTime);
+    return new Release(id, dateTime);
   }
 
   @Test
@@ -94,5 +93,4 @@ public class DeleteReleaseActionTest {
 
     assertThat(filterForDeletion(releases, releases.size() + 1)).isEmpty();
   }
-
 }

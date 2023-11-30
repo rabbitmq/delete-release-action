@@ -442,7 +442,8 @@ public class DeleteReleaseAction {
   }
 
   static void sortByPublication(List<Release> releases) {
-    releases.sort(Comparator.comparing(Release::publication, Comparator.nullsFirst(Comparator.naturalOrder())));
+    releases.sort(
+        Comparator.comparing(
+            Release::publication, Comparator.nullsFirst(Comparator.naturalOrder())));
   }
-
 }
