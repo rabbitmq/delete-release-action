@@ -5,6 +5,8 @@
  */
 package com.rabbitmq.actions;
 
+import static com.rabbitmq.actions.Utils.*;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -31,7 +33,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -106,54 +107,6 @@ public class DeleteReleaseAction {
     if (System.getenv(env) == null) {
       throw new IllegalArgumentException("Parameter " + arg + " must be set");
     }
-  }
-
-  private static void testSequence() {
-    Consumer<String> display = m -> logGreen(m);
-    String message;
-    int exitCode = 0;
-    try {
-      String testUri = "https://www.wikipedia.org/";
-      logYellow("Starting test sequence, trying to reach " + testUri);
-      HttpRequest request = HttpRequest.newBuilder().uri(new URI(testUri)).GET().build();
-      HttpResponse<Void> response =
-          HttpClient.newBuilder()
-              .connectTimeout(Duration.ofSeconds(60))
-              .build()
-              .send(request, BodyHandlers.discarding());
-      int statusClass = response.statusCode() - response.statusCode() % 100;
-      message = "Response code is " + response.statusCode();
-      if (statusClass != 200) {
-        display = m -> logRed(m);
-        exitCode = 1;
-      }
-    } catch (Exception e) {
-      message = "Error during test sequence: " + e.getMessage();
-      display = m -> logRed(m);
-      exitCode = 1;
-    }
-    display.accept(message);
-    System.exit(exitCode);
-  }
-
-  static void logGreen(String message) {
-    log("\u001B[32m" + message + "\u001B[0m");
-  }
-
-  static void logYellow(String message) {
-    log("\u001B[33m" + message + "\u001B[0m");
-  }
-
-  static void logRed(String message) {
-    log("\u001B[31m" + message + "\u001B[0m");
-  }
-
-  static void log(String message, Object... args) {
-    System.out.println(String.format(message, args));
-  }
-
-  static void out(String message) {
-    System.out.println(message);
   }
 
   static List<Release> filterByTag(List<Release> releases, String tagRegex) {
@@ -244,7 +197,10 @@ public class DeleteReleaseAction {
       HttpRequest request = requestBuilder().DELETE().uri(URI.create(release.url())).build();
       try {
         HttpResponse<Void> response = client.send(request, BodyHandlers.discarding());
-        // TODO check response code
+        int statusCode = response.statusCode();
+        if (statusClass(statusCode) != 200) {
+          logYellow("Unexpected response code (release deletion):" + response.statusCode());
+        }
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -256,7 +212,10 @@ public class DeleteReleaseAction {
       HttpRequest request = requestBuilder("/git/refs/tags/" + release.tag()).DELETE().build();
       try {
         HttpResponse<Void> response = client.send(request, BodyHandlers.discarding());
-        // TODO check response code
+        int statusCode = response.statusCode();
+        if (statusClass(statusCode) != 200) {
+          logYellow("Unexpected response code (tag deletion):" + response.statusCode());
+        }
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -281,6 +240,10 @@ public class DeleteReleaseAction {
 
     private Builder auth(Builder builder) {
       return builder.setHeader("Authorization", "token " + input.source().token());
+    }
+
+    private static int statusClass(int statusCode) {
+      return statusCode - statusCode % 100;
     }
   }
 
