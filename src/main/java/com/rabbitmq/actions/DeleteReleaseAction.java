@@ -94,6 +94,7 @@ public class DeleteReleaseAction {
             try {
               access.delete(r);
               access.deleteTag(r);
+              access.waitForDeletion(r);
             } catch (Exception e) {
               logRed("Error while deleting release " + r + ": " + e.getMessage());
             }
@@ -139,9 +140,13 @@ public class DeleteReleaseAction {
     void delete(Release release);
 
     void deleteTag(Release release);
+
+    void waitForDeletion(Release release);
   }
 
   static class GitubRestApiReleaseAccess implements ReleaseAccess {
+
+    private static final Duration DELETION_TIMEOUT = Duration.ofSeconds(5);
 
     private final HttpClient client =
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(60)).build();
@@ -208,8 +213,7 @@ public class DeleteReleaseAction {
 
     @Override
     public void deleteTag(Release release) {
-      // https://api.github.com/repos/rabbitmq/rabbitmq-server-binaries-dev/git/refs/tags/v3.9.0-alpha-test.1
-      HttpRequest request = requestBuilder("/git/refs/tags/" + release.tag()).DELETE().build();
+      HttpRequest request = requestBuilder().uri(tagUri(release)).DELETE().build();
       try {
         HttpResponse<Void> response = client.send(request, BodyHandlers.discarding());
         int statusCode = response.statusCode();
@@ -219,6 +223,54 @@ public class DeleteReleaseAction {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+    }
+
+    private URI tagUri(Release release) {
+      // https://api.github.com/repos/rabbitmq/rabbitmq-server-binaries-dev/git/refs/tags/v3.9.0-alpha-test.1
+      String path = "/git/refs/tags/" + release.tag();
+      return URI.create(
+          GITHUB_API_URL
+              + "/repos/"
+              + input.source().owner()
+              + "/"
+              + input.source().repository()
+              + path);
+    }
+
+    @Override
+    public void waitForDeletion(Release release) {
+      if (!getUntilNotFound(URI.create(release.url()))) {
+        logYellow(
+            "  Release has not been deleted after "
+                + DELETION_TIMEOUT.getSeconds()
+                + " second(s).");
+      }
+      if (!getUntilNotFound(tagUri(release))) {
+        logYellow(
+            "  Tag has not been deleted after " + DELETION_TIMEOUT.getSeconds() + " second(s).");
+      }
+    }
+
+    private boolean getUntilNotFound(URI uri) {
+      Duration increment = Duration.ofSeconds(1);
+      boolean keepGoing = true;
+      Duration elapsed = Duration.ZERO;
+      while (keepGoing && elapsed.compareTo(DELETION_TIMEOUT) < 0) {
+        HttpRequest request = requestBuilder().GET().uri(uri).build();
+        try {
+          HttpResponse<Void> response = client.send(request, BodyHandlers.discarding());
+          if (response.statusCode() == 404) {
+            keepGoing = false;
+          } else {
+            Thread.sleep(increment.toMillis());
+            elapsed = elapsed.plus(increment);
+          }
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      return !keepGoing;
     }
 
     private Builder requestBuilder() {
