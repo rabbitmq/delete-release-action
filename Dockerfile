@@ -21,7 +21,7 @@ ENV JAVA_HOME="/usr/lib/jdk-$JAVA_VERSION"
 RUN set -eux; \
     mkdir $JAVA_HOME && \
     tar --extract  --file jdk.tar.gz --directory "$JAVA_HOME" --strip-components 1; \
-	  $JAVA_HOME/bin/jlink --compress=2 --output /jre --add-modules java.base,jdk.crypto.cryptoki,java.net.http; \
+	  $JAVA_HOME/bin/jlink --compress=zip-6 --output /jre --add-modules java.base,jdk.crypto.cryptoki,java.net.http; \
 	  /jre/bin/java -version \
     ; \
     mkdir -p /app
