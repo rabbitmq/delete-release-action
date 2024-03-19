@@ -35,7 +35,7 @@
     <mockito.version>5.11.0</mockito.version>
     <spotless.version>2.43.0</spotless.version>
     <google-java-format.version>1.19.2</google-java-format.version>
-    <maven.compiler.plugin.version>3.12.1</maven.compiler.plugin.version>
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
     <maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
     <maven.compiler.source>21</maven.compiler.source>
