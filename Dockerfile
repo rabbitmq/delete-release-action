@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as builder
+FROM ubuntu:24.04 AS builder
 
 RUN set -eux; \
 	apt-get update; \
@@ -36,7 +36,7 @@ WORKDIR /project
 RUN set -eux; \
     ./mvnw package -Dmaven.test.skip --no-transfer-progress
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 RUN set -eux; \
 	\
@@ -47,8 +47,8 @@ RUN set -eux; \
   ; \
 	rm -rf /var/lib/apt/lists/*
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
 
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk/jre
 RUN mkdir -p $JAVA_HOME
@@ -61,8 +61,8 @@ COPY --from=builder /project/target/delete-release-action.jar /app
 RUN set -eux; \
     java -jar /app/delete-release-action.jar test
 
-RUN groupadd --gid 1000 github
-RUN useradd --uid 1000 --gid github --comment "github user" github
+RUN groupadd --gid 1042 github
+RUN useradd --uid 1042 --gid github --comment "github user" github
 
 USER github:github
 
