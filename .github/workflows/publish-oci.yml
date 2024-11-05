@@ -2,7 +2,7 @@ name: Rebuild and publish OCI
 
 on:
   push:
-    paths: ['src/**', '.github/workflows/publish-oci']
+    paths: ['src/**', '.github/workflows/publish-oci.yml']
 
 jobs:
   docker:
