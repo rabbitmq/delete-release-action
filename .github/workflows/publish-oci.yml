@@ -1,4 +1,4 @@
-name: Rebuild Erlang 26.2 image
+name: Rebuild and publish OCI
 
 on:
   push:
