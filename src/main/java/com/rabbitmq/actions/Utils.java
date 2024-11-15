@@ -41,8 +41,8 @@ abstract class Utils {
     System.exit(exitCode);
   }
 
-  static void logGreen(String message) {
-    log("\u001B[32m" + message + "\u001B[0m");
+  static void logGreen(String message, Object... args) {
+    log("\u001B[32m" + String.format(message, args) + "\u001B[0m");
   }
 
   static void logYellow(String message) {

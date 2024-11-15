@@ -6,6 +6,7 @@
 package com.rabbitmq.actions;
 
 import static com.rabbitmq.actions.Utils.*;
+import static java.util.stream.Collectors.joining;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -78,30 +79,57 @@ public class DeleteReleaseAction {
     ReleaseAccess access = new GitubRestApiReleaseAccess(input);
 
     List<Release> releases = access.list();
-    List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
-    if (!filteredReleases.isEmpty()) {
-      sortByPublication(filteredReleases);
-    }
-    List<Release> toDeleteReleases =
-        filterForDeletion(filteredReleases, input.params().keepLastN());
 
-    logGreen("Tag filter: " + input.params().tagFilter());
+    if (releases.isEmpty()) {
+      logGreen("No releases in the repository.");
+    } else {
+      List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
+      if (!filteredReleases.isEmpty()) {
+        sortByPublication(filteredReleases);
+      }
+      List<Release> toDeleteReleases =
+          filterForDeletion(filteredReleases, input.params().keepLastN());
 
-    filteredReleases.forEach(
-        r -> {
-          if (toDeleteReleases.contains(r)) {
-            logYellow("Removing release with tag " + r.tag());
-            try {
-              access.delete(r);
-              access.deleteTag(r);
-              access.waitForDeletion(r);
-            } catch (Exception e) {
-              logRed("Error while deleting release " + r + ": " + e.getMessage());
+      logGreen("Tag filter: " + input.params().tagFilter());
+
+      logGreen(
+          "Repository release(s): %d (tags: %s)",
+          releases.size(), releases.stream().map(r -> r.tag_name).collect(joining(", ")));
+
+      if (filteredReleases.isEmpty()) {
+        logGreen("No selected releases.");
+      } else {
+        logGreen(
+            "Selected release(s): %d (tags: %s)",
+            filteredReleases.size(),
+            filteredReleases.stream().map(r -> r.tag_name).collect(joining(", ")));
+      }
+
+      if (toDeleteReleases.isEmpty()) {
+        logGreen("No releases to delete.");
+      } else {
+        logGreen(
+            "Release(s) to delete: %d (tags: %s)",
+            toDeleteReleases.size(),
+            toDeleteReleases.stream().map(r -> r.tag_name).collect(joining(", ")));
+      }
+
+      filteredReleases.forEach(
+          r -> {
+            if (toDeleteReleases.contains(r)) {
+              logYellow("Removing release with tag " + r.tag());
+              try {
+                access.delete(r);
+                access.deleteTag(r);
+                access.waitForDeletion(r);
+              } catch (Exception e) {
+                logRed("Error while deleting release " + r + ": " + e.getMessage());
+              }
+            } else {
+              log(" Keeping release with tag " + r.tag());
             }
-          } else {
-            log(" Keeping release with tag " + r.tag());
-          }
-        });
+          });
+    }
   }
 
   private static void checkParameter(String env, String arg) {
