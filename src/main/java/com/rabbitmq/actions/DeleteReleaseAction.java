@@ -57,7 +57,6 @@ public class DeleteReleaseAction {
     Map<String, String> envArguments = new LinkedHashMap<>();
     envArguments.put("INPUT_REPOSITORY", "repository");
     envArguments.put("INPUT_TOKEN", "token");
-    envArguments.put("INPUT_TAG-FILTER", "tag-filter");
     envArguments.put("INPUT_KEEP-LAST-N", "keep-last-n");
     for (Entry<String, String> entry : envArguments.entrySet()) {
       try {
