@@ -5,6 +5,8 @@
  */
 package com.rabbitmq.actions;
 
+import static java.lang.String.format;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -42,18 +44,18 @@ abstract class Utils {
   }
 
   static void logGreen(String message, Object... args) {
-    log("\u001B[32m" + String.format(message, args) + "\u001B[0m");
+    log("\u001B[32m" + format(message, args) + "\u001B[0m");
   }
 
-  static void logYellow(String message) {
-    log("\u001B[33m" + message + "\u001B[0m");
+  static void logYellow(String message, Object... args) {
+    log("\u001B[33m" + format(message, args) + "\u001B[0m");
   }
 
-  static void logRed(String message) {
-    log("\u001B[31m" + message + "\u001B[0m");
+  static void logRed(String message, Object... args) {
+    log("\u001B[31m" + format(message, args) + "\u001B[0m");
   }
 
   static void log(String message, Object... args) {
-    System.out.println(String.format(message, args));
+    System.out.printf((message) + "%n", args);
   }
 }

@@ -7,6 +7,7 @@ package com.rabbitmq.actions;
 
 import static com.rabbitmq.actions.Utils.*;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,8 +35,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class DeleteReleaseAction {
 
@@ -66,14 +68,20 @@ public class DeleteReleaseAction {
       }
     }
 
+    if (System.getenv("INPUT_TAG-FILTER") == null && System.getenv("INPUT_NAME-FILTER") == null) {
+      logRed("Parameter tag-filter or name-filter must be set");
+      System.exit(1);
+    }
+
     String orgRepository = System.getenv("INPUT_REPOSITORY");
     String token = System.getenv("INPUT_TOKEN");
     String tagFilter = System.getenv("INPUT_TAG-FILTER");
-    int keepLastN = Integer.valueOf(System.getenv("INPUT_KEEP-LAST-N"));
+    String nameFilter = System.getenv("INPUT_NAME-FILTER");
+    int keepLastN = Integer.parseInt(System.getenv("INPUT_KEEP-LAST-N"));
 
     Input input =
         new Input(
-            new Params(tagFilter, keepLastN),
+            new Params(tagFilter, nameFilter, keepLastN),
             new Source(orgRepository.split("/")[0], orgRepository.split("/")[1], token));
 
     ReleaseAccess access = new GitubRestApiReleaseAccess(input);
@@ -83,50 +91,62 @@ public class DeleteReleaseAction {
     if (releases.isEmpty()) {
       logGreen("No releases in the repository.");
     } else {
-      List<Release> filteredReleases = filterByTag(releases, input.params().tagFilter());
+      List<Release> filteredReleases = filter(releases, tagFilter, nameFilter);
       if (!filteredReleases.isEmpty()) {
         sortByPublication(filteredReleases);
       }
       List<Release> toDeleteReleases =
           filterForDeletion(filteredReleases, input.params().keepLastN());
 
-      logGreen("Tag filter: " + input.params().tagFilter());
+      if (tagFilter == null) {
+        logGreen("No tag filter.");
+      } else {
+        logGreen("Tag filter: %s.", tagFilter);
+      }
+      if (nameFilter == null) {
+        logGreen("No name filter.");
+      } else {
+        logGreen("Name filter: %s.", nameFilter);
+      }
 
+      Function<Release, String> releaseSummary = r -> r.tag_name + "/" + r.name;
       logGreen(
-          "Repository release(s): %d (tags: %s)",
-          releases.size(), releases.stream().map(r -> r.tag_name).collect(joining(", ")));
+          "Repository release(s): %d (%s).",
+          releases.size(), releases.stream().map(releaseSummary).collect(joining(", ")));
 
       if (filteredReleases.isEmpty()) {
         logGreen("No selected releases.");
       } else {
         logGreen(
-            "Selected release(s): %d (tags: %s)",
+            "Selected release(s): %d (%s)",
             filteredReleases.size(),
-            filteredReleases.stream().map(r -> r.tag_name).collect(joining(", ")));
+            filteredReleases.stream().map(releaseSummary).collect(joining(", ")));
       }
 
       if (toDeleteReleases.isEmpty()) {
         logGreen("No releases to delete.");
       } else {
         logGreen(
-            "Release(s) to delete: %d (tags: %s)",
+            "Release(s) to delete: %d (%s)",
             toDeleteReleases.size(),
-            toDeleteReleases.stream().map(r -> r.tag_name).collect(joining(", ")));
+            toDeleteReleases.stream().map(releaseSummary).collect(joining(", ")));
       }
 
       filteredReleases.forEach(
           r -> {
             if (toDeleteReleases.contains(r)) {
-              logYellow("Removing release with tag " + r.tag());
+              logYellow("Removing release '%s'", releaseSummary.apply(r));
               try {
                 access.delete(r);
                 access.deleteTag(r);
                 access.waitForDeletion(r);
               } catch (Exception e) {
-                logRed("Error while deleting release " + r + ": " + e.getMessage());
+                logRed(
+                    "Error while deleting release '%s': %s",
+                    releaseSummary.apply(r), e.getMessage());
               }
             } else {
-              log(" Keeping release with tag " + r.tag());
+              log(" Keeping release '%s'", releaseSummary.apply(r));
             }
           });
     }
@@ -138,11 +158,33 @@ public class DeleteReleaseAction {
     }
   }
 
-  static List<Release> filterByTag(List<Release> releases, String tagRegex) {
-    Pattern pattern = Pattern.compile(tagRegex);
-    return releases.stream()
-        .filter(r -> pattern.matcher(r.tag()).matches())
-        .collect(Collectors.toList());
+  static Predicate<Release> releaseRegexPredicate(
+      Function<Release, String> accessor, String regex) {
+    Pattern pattern = Pattern.compile(regex);
+    return r -> pattern.matcher(accessor.apply(r)).matches();
+  }
+
+  static Predicate<Release> tagPredicate(String tagRegex) {
+    return releaseRegexPredicate(Release::tag, tagRegex);
+  }
+
+  static Predicate<Release> namePredicate(String nameRegex) {
+    return releaseRegexPredicate(Release::name, nameRegex);
+  }
+
+  static List<Release> filter(List<Release> releases, String tagRegex, String nameRegex) {
+    Predicate<Release> predicate = r -> true;
+    if (tagRegex != null) {
+      predicate = predicate.and(tagPredicate(tagRegex));
+    }
+    if (nameRegex != null) {
+      predicate = predicate.and(namePredicate(nameRegex));
+    }
+    return filter(releases, predicate);
+  }
+
+  static List<Release> filter(List<Release> releases, Predicate<Release> predicate) {
+    return releases.stream().filter(predicate).collect(toList());
   }
 
   static List<Release> filterForDeletion(List<Release> releases, int keepLastN) {
@@ -343,12 +385,14 @@ public class DeleteReleaseAction {
     private String url;
     private ZonedDateTime published_at;
     private String tag_name;
+    private String name;
 
     Release() {}
 
-    Release(long id, String tag) {
+    Release(long id, String tag, String name) {
       this.id = id;
       this.tag_name = tag;
+      this.name = name;
     }
 
     Release(long id, ZonedDateTime published_at) {
@@ -366,6 +410,10 @@ public class DeleteReleaseAction {
 
     String tag() {
       return this.tag_name;
+    }
+
+    String name() {
+      return this.name;
     }
 
     ZonedDateTime publication() {
@@ -433,15 +481,21 @@ public class DeleteReleaseAction {
   static class Params {
 
     private final String tag_filter;
+    private final String name_filter;
     private final int keep_last_n;
 
-    Params(String tag_filter, int keep_last_n) {
+    Params(String tag_filter, String name_filter, int keep_last_n) {
       this.tag_filter = tag_filter;
+      this.name_filter = name_filter;
       this.keep_last_n = keep_last_n;
     }
 
     String tagFilter() {
       return tag_filter;
+    }
+
+    String nameFilter() {
+      return name_filter;
     }
 
     int keepLastN() {
@@ -450,7 +504,16 @@ public class DeleteReleaseAction {
 
     @Override
     public String toString() {
-      return "Params{" + "tag_filter='" + tag_filter + '\'' + ", keep_last_n=" + keep_last_n + '}';
+      return "Params{"
+          + "tag_filter='"
+          + tag_filter
+          + '\''
+          + ", name_filter='"
+          + name_filter
+          + '\''
+          + ", keep_last_n="
+          + keep_last_n
+          + '}';
     }
   }
 

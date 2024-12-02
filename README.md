@@ -14,9 +14,11 @@ This is a GitHub Action to delete old releases.
     keep-last-n: 2
 ```
 
+The filtering can be used on the tag name (`tag-filter`) or on the release name (`name-filter`).
+
 # License and Copyright
 
-(c) 2022-2023 Broadcom. All Rights Reserved.
+(c) 2022-2024 Broadcom. All Rights Reserved.
 The term Broadcom refers to Broadcom Inc. and/or its subsidiaries.
 
 This package, the Concourse GitHub Release Delete Resource, is licensed
