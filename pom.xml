@@ -33,7 +33,7 @@
     <spring-boot-maven-plugin.version>3.4.1</spring-boot-maven-plugin.version>
     <assertj.version>3.27.2</assertj.version>
     <mockito.version>5.15.2</mockito.version>
-    <spotless.version>2.44.1</spotless.version>
+    <spotless.version>2.44.2</spotless.version>
     <google-java-format.version>1.25.2</google-java-format.version>
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
