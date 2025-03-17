@@ -32,7 +32,7 @@
     <junit.jupiter.version>5.12.1</junit.jupiter.version>
     <spring-boot-maven-plugin.version>3.4.3</spring-boot-maven-plugin.version>
     <assertj.version>3.27.3</assertj.version>
-    <mockito.version>5.16.0</mockito.version>
+    <mockito.version>5.16.1</mockito.version>
     <spotless.version>2.44.3</spotless.version>
     <google-java-format.version>1.25.2</google-java-format.version>
     <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
