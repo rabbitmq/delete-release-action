@@ -30,7 +30,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <gson.version>2.13.1</gson.version>
     <junit.jupiter.version>5.13.4</junit.jupiter.version>
-    <spring-boot-maven-plugin.version>3.5.4</spring-boot-maven-plugin.version>
+    <spring-boot-maven-plugin.version>3.5.5</spring-boot-maven-plugin.version>
     <assertj.version>3.27.4</assertj.version>
     <mockito.version>5.19.0</mockito.version>
     <spotless.version>2.46.1</spotless.version>
