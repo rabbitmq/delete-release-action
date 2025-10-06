@@ -34,7 +34,7 @@
     <assertj.version>3.27.6</assertj.version>
     <mockito.version>5.20.0</mockito.version>
     <spotless.version>3.0.0</spotless.version>
-    <google-java-format.version>1.28.0</google-java-format.version>
+    <google-java-format.version>1.29.0</google-java-format.version>
     <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
     <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
