@@ -21,7 +21,7 @@ abstract class Utils {
     String message;
     int exitCode = 0;
     try {
-      String testUri = "https://www.wikipedia.org/";
+      String testUri = "https://connectivitycheck.gstatic.com/generate_204";
       logYellow("Starting test sequence, trying to reach " + testUri);
       HttpRequest request = HttpRequest.newBuilder().uri(new URI(testUri)).GET().build();
       try (HttpClient client =
