@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:26.04 AS builder
 
 RUN set -eux; \
 	apt-get update; \
@@ -8,7 +8,7 @@ RUN set -eux; \
 		wget \
 		jq
 
-ARG JAVA_VERSION="21"
+ARG JAVA_VERSION="25"
 
 RUN ARCH="x86"; BUNDLE="jdk"; \
     wget "https://api.azul.com/zulu/download/community/v1.0/bundles/latest/?java_version=$JAVA_VERSION&ext=tar.gz&os=linux&arch=$ARCH&hw_bitness=64&release_status=ga&bundle_type=$BUNDLE" -O jdk-info.json
@@ -36,7 +36,7 @@ WORKDIR /project
 RUN set -eux; \
     ./mvnw package -Dmaven.test.skip --no-transfer-progress
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 RUN set -eux; \
 	\
@@ -50,7 +50,7 @@ RUN set -eux; \
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk/jre
+ENV JAVA_HOME=/usr/lib/jvm/java-25-openjdk/jre
 RUN mkdir -p $JAVA_HOME
 COPY --from=builder /jre $JAVA_HOME/
 RUN ln -svT $JAVA_HOME/bin/java /usr/local/bin/java
